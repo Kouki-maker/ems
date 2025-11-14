@@ -1,0 +1,67 @@
+{
+  "stationId": "ELECTRA_PARIS_15",
+  "gridCapacity": 400,
+  "chargers": [
+    {
+      "id": "CP001",
+      "maxPower": 200,
+      "manufacturer": "ABB",
+      "model": "Terra 184",
+      "connectors": [
+        {
+          "connector_id": 1,
+          "connector_type": "CCS2",
+          "max_power": 150
+        },
+        {
+          "connector_id": 2,
+          "connector_type": "CHAdeMO",
+          "max_power": 50
+        }
+      ]
+    },
+    {
+      "id": "CP002",
+      "maxPower": 200,
+      "manufacturer": "ABB",
+      "model": "Terra 184",
+      "connectors": [
+        {
+          "connector_id": 1,
+          "connector_type": "CCS2",
+          "max_power": 150
+        },
+        {
+          "connector_id": 2,
+          "connector_type": "CCS2",
+          "max_power": 150
+        }
+      ]
+    },
+    {
+      "id": "CP003",
+      "maxPower": 300,
+      "manufacturer": "Tritium",
+      "model": "RTM75",
+      "connectors": [
+        {
+          "connector_id": 1,
+          "connector_type": "CCS2",
+          "max_power": 300
+        },
+        {
+          "connector_id": 2,
+          "connector_type": "CCS2",
+          "max_power": 300
+        }
+      ]
+    }
+  ],
+  "battery": {
+    "initialCapacity": 200,
+    "power": 100,
+    "minSOC": 10.0,
+    "maxSOC": 100.0
+  },
+  "staticLoad": 3.0
+}

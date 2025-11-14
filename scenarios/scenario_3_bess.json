@@ -1,0 +1,88 @@
+{
+  "name": "Scenario 3: Battery Boost Integration",
+  "description": "Same as Scenario 2 but with BESS providing boost power",
+  "stationConfig": {
+    "stationId": "ELECTRA_TEST_S3",
+    "gridCapacity": 400,
+    "chargers": [
+      {
+        "id": "CP001",
+        "maxPower": 300,
+        "connectors": 2
+      },
+      {
+        "id": "CP002",
+        "maxPower": 300,
+        "connectors": 2
+      }
+    ],
+    "battery": {
+      "initialCapacity": 200,
+      "power": 200,
+      "minSOC": 10.0,
+      "maxSOC": 100.0
+    },
+    "staticLoad": 3.0
+  },
+  "events": [
+    {
+      "time": 0,
+      "type": "session_start",
+      "chargerId": "CP001",
+      "connectorId": 1,
+      "vehicleMaxPower": 150,
+      "sessionId": "S1"
+    },
+    {
+      "time": 0,
+      "type": "session_start",
+      "chargerId": "CP001",
+      "connectorId": 2,
+      "vehicleMaxPower": 150,
+      "sessionId": "S2"
+    },
+    {
+      "time": 10,
+      "type": "session_start",
+      "chargerId": "CP002",
+      "connectorId": 1,
+      "vehicleMaxPower": 150,
+      "sessionId": "S3"
+    },
+    {
+      "time": 20,
+      "type": "session_start",
+      "chargerId": "CP002",
+      "connectorId": 2,
+      "vehicleMaxPower": 150,
+      "sessionId": "S4"
+    },
+    {
+      "time": 30,
+      "type": "session_stop",
+      "sessionId": "S1",
+      "consumedEnergy": 12.5
+    }
+  ],
+  "expectations": {
+    "bess_boost_activated": true,
+    "description": "With 4 vehicles (600kW demand) and 400kW grid, BESS should provide boost",
+    "checkpoints": [
+      {
+        "time": 25,
+        "description": "4 vehicles charging with BESS boost",
+        "active_sessions": 4,
+        "total_power_available": 597,
+        "grid_power": 397,
+        "bess_power": 200,
+        "each_vehicle_gets_approximately": 149.25
+      },
+      {
+        "time": 35,
+        "description": "3 vehicles, BESS may charge or idle",
+        "active_sessions": 3,
+        "bess_mode_possible": ["charging", "idle"]
+      }
+    ]
+  }
+}

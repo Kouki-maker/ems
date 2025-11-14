@@ -1,0 +1,38 @@
+{
+  "name": "Scenario 1: Static Load Management on a single charger",
+  "description": "2 vehicles start charging on the same charger, each accepting 150kW max. Expected: Each gets ~100kW (200/2)",
+  "stationConfig": {
+    "stationId": "ELECTRA_TEST_S1",
+    "gridCapacity": 400,
+    "chargers": [
+      {
+        "id": "CP001",
+        "maxPower": 200,
+        "connectors": 2
+      }
+    ],
+    "staticLoad": 3.0
+  },
+  "events": [
+    {
+      "time": 0,
+      "type": "session_start",
+      "chargerId": "CP001",
+      "connectorId": 1,
+      "vehicleMaxPower": 150
+    },
+    {
+      "time": 0,
+      "type": "session_start",
+      "chargerId": "CP001",
+      "connectorId": 2,
+      "vehicleMaxPower": 150
+    }
+  ],
+  "expectations": {
+    "session_1_power": 100,
+    "session_2_power": 100,
+    "total_allocated": 200,
+    "grid_compliant": true
+  }
+}

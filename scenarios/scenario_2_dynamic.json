@@ -1,0 +1,96 @@
+{
+  "name": "Scenario 2: Dynamic Power Re-allocation",
+  "description": "Dynamic power reallocation as vehicles arrive and leave",
+  "stationConfig": {
+    "stationId": "ELECTRA_TEST_S2",
+    "gridCapacity": 400,
+    "chargers": [
+      {
+        "id": "CP001",
+        "maxPower": 300,
+        "connectors": 2
+      },
+      {
+        "id": "CP002",
+        "maxPower": 300,
+        "connectors": 2
+      }
+    ],
+    "staticLoad": 3.0
+  },
+  "events": [
+    {
+      "time": 0,
+      "type": "session_start",
+      "chargerId": "CP001",
+      "connectorId": 1,
+      "vehicleMaxPower": 150,
+      "sessionId": "S1"
+    },
+    {
+      "time": 0,
+      "type": "session_start",
+      "chargerId": "CP001",
+      "connectorId": 2,
+      "vehicleMaxPower": 150,
+      "sessionId": "S2"
+    },
+    {
+      "time": 10,
+      "type": "session_start",
+      "chargerId": "CP002",
+      "connectorId": 1,
+      "vehicleMaxPower": 150,
+      "sessionId": "S3"
+    },
+    {
+      "time": 20,
+      "type": "session_start",
+      "chargerId": "CP002",
+      "connectorId": 2,
+      "vehicleMaxPower": 150,
+      "sessionId": "S4"
+    },
+    {
+      "time": 30,
+      "type": "session_stop",
+      "sessionId": "S1",
+      "consumedEnergy": 12.5
+    }
+  ],
+  "checkpoints": [
+    {
+      "time": 5,
+      "description": "2 vehicles charging",
+      "expectations": {
+        "active_sessions": 2,
+        "each_gets_approximately": 150
+      }
+    },
+    {
+      "time": 15,
+      "description": "3 vehicles charging",
+      "expectations": {
+        "active_sessions": 3,
+        "total_allocated_max": 400
+      }
+    },
+    {
+      "time": 25,
+      "description": "4 vehicles charging - grid constrained",
+      "expectations": {
+        "active_sessions": 4,
+        "each_gets_approximately": 99.25,
+        "total_allocated_max": 397
+      }
+    },
+    {
+      "time": 35,
+      "description": "1st vehicle left, power reallocation",
+      "expectations": {
+        "active_sessions": 3,
+        "power_increased": true
+      }
+    }
+  ]
+}

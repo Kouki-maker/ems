@@ -1,0 +1,197 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: electra_postgres
+    environment:
+      POSTGRES_USER: electra
+      POSTGRES_PASSWORD: electra_password
+      POSTGRES_DB: electra_ems
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U electra -d electra_ems"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - electra-network
+    restart: unless-stopped
+
+  # PgAdmin
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: electra_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@electra.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - electra-network
+    restart: unless-stopped
+    profiles:
+      - dev
+
+  # Mosquitto MQTT Broker
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: electra_mosquitto
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+    restart: unless-stopped
+    networks:
+      - electra-network
+
+  # API EMS
+  ems-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: electra_ems_api
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+      - DATABASE_URL=postgresql+asyncpg://electra:electra_password@postgres:5432/electra_ems
+      - MQTT_BROKER_HOST=mosquitto
+      - MQTT_BROKER_PORT=1883
+      - STATION_CONFIG_PATH=/app/station_config.json
+    volumes:
+      - ./app:/app/app
+      - ./scenarios:/app/scenarios
+      - ./station_config.json:/app/station_config.json
+      - ./test_results:/app/test_results
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini
+      - ./scripts:/app/scripts
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mosquitto:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - electra-network
+    entrypoint: ["/bin/bash", "/app/scripts/docker-entrypoint.sh"]
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+  # Simulateur Chargeur 1
+  charger-sim-1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: electra_charger_sim_1
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+    volumes:
+      - ./simulators:/app/simulators
+    depends_on:
+      - mosquitto
+      - ems-api
+    networks:
+      - electra-network
+    profiles:
+      - simulators
+    command: >
+      python simulators/charger_simulator.py
+      --station-id ELECTRA_PARIS_15
+      --charger-id CP001
+      --broker mosquitto
+      --port 1883
+      --mode auto
+      --duration 600
+
+  # Simulateur Chargeur 2
+  charger-sim-2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: electra_charger_sim_2
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+    volumes:
+      - ./simulators:/app/simulators
+    depends_on:
+      - mosquitto
+      - ems-api
+    networks:
+      - electra-network
+    profiles:
+      - simulators
+    command: >
+      python simulators/charger_simulator.py
+      --station-id ELECTRA_PARIS_15
+      --charger-id CP002
+      --broker mosquitto
+      --port 1883
+      --mode auto
+      --duration 600
+
+  # Simulateur BESS
+  bess-sim:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: electra_bess_sim
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+    volumes:
+      - ./simulators:/app/simulators
+    depends_on:
+      - mosquitto
+      - ems-api
+    networks:
+      - electra-network
+    profiles:
+      - simulators
+    command: >
+      python simulators/bess_simulator.py
+      --station-id ELECTRA_PARIS_15
+      --broker mosquitto
+      --port 1883
+      --mode auto
+      --duration 600
+
+  # MQTT Explorer (Web UI pour visualiser les messages)
+  mqtt-explorer:
+    image: smeagolworms4/mqtt-explorer
+    container_name: electra_mqtt_explorer
+    ports:
+      - "4000:4000"
+    environment:
+      - HTTP_PORT=4000
+      - MQTT_HOST=mosquitto
+      - MQTT_PORT=1883
+    depends_on:
+      - mosquitto
+    networks:
+      - electra-network
+    restart: unless-stopped
+    profiles:
+      - dev
+
+volumes:
+  postgres_data:
+  pgadmin_data:
+
+networks:
+  electra-network:
+    driver: bridge
